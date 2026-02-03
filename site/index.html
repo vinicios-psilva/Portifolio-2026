@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vinicios Silva | Analytics Data</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <link rel="stylesheet" href="style.css">
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-light bg-white sticky-top shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold text-primary" href="#">
+                <i class="bi bi-graph-up-arrow"></i> Vinicios Pereira
+            </a>
+            <div class="d-flex">
+                <a href="#projetos" class="btn btn-outline-primary me-2">Projetos</a>
+                <a href="#contato" class="btn btn-primary">Contato</a>
+            </div>
+        </div>
+    </nav>
+
+    <header id="hero" class="bg-light py-5 text-center">
+        <div class="container py-5">
+            <h1 class="display-4 fw-bold text-dark">Transformando dados em <span class="text-primary">decisões</span>.</h1>
+            <p class="lead text-muted mb-4">Analytics data desenvolvimento em Python, AWS e Business Intelligence.</p>
+            <div class="d-flex justify-content-center gap-3">
+                <span class="badge bg-secondary">Python</span>
+                <span class="badge bg-secondary">SQL</span>
+                <span class="badge bg-secondary">AWS</span>
+                <span class="badge bg-secondary">Power BI</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="container my-5" id="projetos">
+        <h2 class="mb-4 border-bottom pb-2">Projetos em Destaque</h2>
+        
+        <div class="row g-4">
+            <div class="col-md-6">
+                <div class="card h-100 border-0 shadow-hover">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="card-title fw-bold text-primary">HCI-F: Gestão de RH</h5>
+                            <i class="bi bi-people fs-4 text-muted"></i>
+                        </div>
+                        <p class="card-text text-muted">Pipeline completo de análide de dados. Substituição de processos manuais (Excel) por scripts Python automatizados com predição de turnover via Machine Learning.</p>
+                        
+                        <div class="mb-4">
+                            <span class="badge bg-light text-dark border">Python / Pandas</span>
+                            <span class="badge bg-light text-dark border">Scikit-Learn</span>
+                            <span class="badge bg-light text-dark border">Streamlit</span>
+                        </div>
+
+                        <a href="#" class="btn btn-primary w-100">
+                            <i class="bi bi-github"></i> Ver Código
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card h-100 border-0 shadow-hover">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="card-title fw-bold text-success">Cloud Data Lake</h5>
+                            <i class="bi bi-cloud fs-4 text-muted"></i>
+                        </div>
+                        <p class="card-text text-muted">Arquitetura Serverless para ingestão de dados em tempo real utilizando AWS Lambda e S3. (Projeto em desenvolvimento).</p>
+                        
+                        <div class="mb-4">
+                            <span class="badge bg-light text-dark border">AWS Lambda</span>
+                            <span class="badge bg-light text-dark border">S3</span>
+                            <span class="badge bg-light text-dark border">Terraform</span>
+                        </div>
+
+                        <button class="btn btn-outline-secondary w-100" disabled>Em breve</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-dark text-white text-center py-4 mt-5">
+        <div class="container">
+            <p class="mb-0">© 2026 Desenvolvido com Bootstrap & Vercel.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
