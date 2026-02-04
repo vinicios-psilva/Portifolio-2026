@@ -129,5 +129,5 @@ cols_visualizacao = ['MATRÍCULA', 'NOME', 'CAPACITAÇÃO', 'TOTAL_FALTAS', 'MOT
 st.dataframe(
     df_filtrado[cols_visualizacao].sort_values('TOTAL_FALTAS', ascending=False),
     use_container_width=True,
-    hide_index=True
+    
 )
