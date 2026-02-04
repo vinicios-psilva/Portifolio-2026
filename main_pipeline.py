@@ -1,192 +1,113 @@
-{
-  "nbformat": 4,
-  "nbformat_minor": 0,
-  "metadata": {
-    "colab": {
-      "provenance": [],
-      "authorship_tag": "ABX9TyNB2aPZ2UXYXjNYm/BfKSY8"
-    },
-    "kernelspec": {
-      "name": "python3",
-      "display_name": "Python 3"
-    },
-    "language_info": {
-      "name": "python"
-    }
-  },
-  "cells": [
-    {
-      "cell_type": "code",
-      "execution_count": 25,
-      "metadata": {
-        "colab": {
-          "base_uri": "https://localhost:8080/"
-        },
-        "id": "0lIv8nAocC32",
-        "outputId": "ea52e1dd-ee57-4a66-c537-111f3aace91d"
-      },
-      "outputs": [
-        {
-          "output_type": "stream",
-          "name": "stdout",
-          "text": [
-            "=== INICIANDO PIPELINE HCI-F ===\n",
-            "--- [ETAPA 1] Gerando 1000 registros sinténticos...\n",
-            "--- [ETAPA 2] Treinamento do modelo de risco de desligamento...\n",
-            "   > Modelo treinado com sucesso. Acurácia: 100.00%\n",
-            "--- [ETAPA 3] Aplicando Motor de Decisão Prescritiva...\n",
-            "--- [ETAPA 4] Salvando no Data Warehouse (SQLite)...\n",
-            "--- [ETAPA 5] Gerando Relatório Gerencial...\n",
-            "\n",
-            " SUCESSO! Processamento concluído.\n",
-            "   - Banco de Dados: output/DB_RH_CONSOLIDADO.db\n",
-            "   - Relatório CSV: output/RELATORIO_PRESCRITIVO_ACAO.csv\n",
-            "   - Casos Críticos Identificados: 175\n",
-            "\n",
-            "--- PREVIEW DO RELATÓRIO ---\n",
-            "   CAPACITAÇÃO MOTIVO_OCORRENCIA                       ACAO_SUGERIDA\n",
-            "7      INICIAL             SAÚDE                           MONITARAR\n",
-            "8     MIGRAÇÃO     INJUSTIFICADA     MEDIDA DISCIPLINAR / COMPLIANCE\n",
-            "9     MIGRAÇÃO     INJUSTIFICADA     MEDIDA DISCIPLINAR / COMPLIANCE\n",
-            "11  RECICLAGEM             SAÚDE  ACOMPANHAR ATESTADO MÉDICO / SESMT\n",
-            "15     INICIAL  MOTIVOS PESSOAIS                           MONITARAR\n"
-          ]
-        }
-      ],
-      "source": [
-        "import pandas as pd\n",
-        "import numpy as np\n",
-        "import random\n",
-        "import sqlalchemy as db\n",
-        "import os\n",
-        "from sklearn.tree import DecisionTreeClassifier\n",
-        "from faker import Faker\n",
-        "\n",
-        "fake = Faker('pt-BR')\n",
-        "random.seed(42)\n",
-        "\n",
-        "if not os.path.exists('output'):\n",
-        "  os.makedirs('output')\n",
-        "\n",
-        "\n",
-        "def gerar_dados(qtd=1000):\n",
-        "  print(f\"--- [ETAPA 1] Gerando {qtd} registros sinténticos...\")\n",
-        "  dados = []\n",
-        "\n",
-        "  opcoes_capacitacao = ['INICIAL','RECICLAGEM', 'MIGRAÇÃO']\n",
-        "  opcoes_motivo = ['SAÚDE','INJUSTIFICADA','MOTIVOS PESSOAIS', 'OUTRA OPORTUNIDADE']\n",
-        "\n",
-        "  for _ in range(qtd):\n",
-        "    status = random.choices(['ATIVO','AFASTADO','DESLIGADO'], weights=[0.85,0.1,0.05])[0]\n",
-        "    capacitacao = random.choices(opcoes_capacitacao, weights=[0.15,0.1,0.6])[0]\n",
-        "\n",
-        "    if capacitacao == 'INICIAL':\n",
-        "      total_abs = random.choices([0,1,3], weights=[20,60,30])[0]\n",
-        "    else:\n",
-        "      total_abs = random.choices([0,1,2,5], weights=[70,15,10,5])[0]\n",
-        "\n",
-        "    # Fix: Changed random.choices to random.choice to return a single string instead of a list\n",
-        "    motivo = random.choice(opcoes_motivo) if total_abs > 0 else 'N/A'\n",
-        "\n",
-        "    if total_abs >= 3:\n",
-        "      status_srh = 'RISCO DE DESLIGAMENTO'\n",
-        "    elif status == 'DESLIGADO':\n",
-        "      status_srh = 'EM PROCESSO DESLIGAMENTO'\n",
-        "    else:\n",
-        "      status_srh = 'REGULAR'\n",
-        "\n",
-        "    dados.append({\n",
-        "            'MATRÍCULA': f\"RK{random.randint(10000, 99999)}\",\n",
-        "            'NOME': fake.name().upper(),\n",
-        "            'CARGO': random.choice(['AGENTE DE AEROPORTO', 'LÍDER DE PÁTIO', 'COORDENADOR']),\n",
-        "            'CAPACITAÇÃO': capacitacao,\n",
-        "            'STATUS_GERENCIAL': status,\n",
-        "            'STATUS_SRH': status_srh,\n",
-        "            'TOTAL_FALTAS': total_abs,\n",
-        "            'MOTIVO_OCORRENCIA': motivo,\n",
-        "            'ALVO_RISCO': 1 if total_abs >= 2 else 0\n",
-        "        })\n",
-        "\n",
-        "  return pd.DataFrame(dados)\n",
-        "\n",
-        "def modelo_risco(df):\n",
-        "  print(\"--- [ETAPA 2] Treinamento do modelo de risco de desligamento...\")\n",
-        "\n",
-        "  df_ml = df.copy()\n",
-        "\n",
-        "  df_ml['CAPACITAÇÃO_COD'] = df_ml['CAPACITAÇÃO'].astype('category').cat.codes\n",
-        "  df_ml['MOTIVO_COD'] = df_ml['MOTIVO_OCORRENCIA'].astype('category').cat.codes\n",
-        "\n",
-        "  X = df_ml[['TOTAL_FALTAS','CAPACITAÇÃO_COD','MOTIVO_COD']]\n",
-        "  y = df_ml['ALVO_RISCO']\n",
-        "\n",
-        "  modelo = DecisionTreeClassifier(max_depth=3, random_state=42)\n",
-        "  modelo.fit(X,y)\n",
-        "\n",
-        "  df['RISCO_PREDITO_IA'] = modelo.predict(X)\n",
-        "\n",
-        "  score = modelo.score(X,y)\n",
-        "  print(f\"   > Modelo treinado com sucesso. Acurácia: {score:.2%}\")\n",
-        "\n",
-        "  return df\n",
-        "\n",
-        "\n",
-        "\n",
-        "def motor_decisao(row):\n",
-        "  if row['RISCO_PREDITO_IA'] == 0:\n",
-        "    return \"MONITORAR (BAIXO RISCO)\"\n",
-        "\n",
-        "  if row['CAPACITAÇÃO'] == 'INICIAL':\n",
-        "    if row['MOTIVO_OCORRENCIA'] == 'INJUSTIFICADA':\n",
-        "      return \"FEEDBACK CORRETIVO (POSTURA)\"\n",
-        "    else:\n",
-        "      return \"MONITARAR\"\n",
-        "\n",
-        "  else:\n",
-        "    motivo = row['MOTIVO_OCORRENCIA']\n",
-        "\n",
-        "    if motivo == 'INJUSTIFICADA':\n",
-        "      return \"MEDIDA DISCIPLINAR / COMPLIANCE\"\n",
-        "\n",
-        "    elif 'SAÚDE' in motivo:\n",
-        "      return \"ACOMPANHAR ATESTADO MÉDICO / SESMT\"\n",
-        "\n",
-        "    elif 'MOTIVOS PESSOAIS' in motivo:\n",
-        "      return \"REUNIÃO DE ALINHAMENTO COM O GESTOR\"\n",
-        "\n",
-        "    elif 'OUTRA OPORTUNIDADE' in motivo:\n",
-        "      return \"ENTENDER CONCORRÊNCIA\"\n",
-        "\n",
-        "  return \"ANÁLISE IN LOCO (CASO COMPLEXO)\"\n",
-        "\n",
-        "if __name__ == \"__main__\":\n",
-        "    print(\"=== INICIANDO PIPELINE HCI-F ===\")\n",
-        "\n",
-        "    df_raw = gerar_dados(1000)\n",
-        "    df_predictive = modelo_risco(df_raw)\n",
-        "\n",
-        "    print(\"--- [ETAPA 3] Aplicando Motor de Decisão Prescritiva...\")\n",
-        "    df_predictive['ACAO_SUGERIDA'] = df_predictive.apply(motor_decisao, axis=1)\n",
-        "\n",
-        "    print(\"--- [ETAPA 4] Salvando no Data Warehouse (SQLite)...\")\n",
-        "    engine = db.create_engine('sqlite:///output/DB_RH_CONSOLIDADO.db')\n",
-        "    df_predictive.to_sql('TB_HISTORICO_PRESENCA', con=engine, if_exists='replace', index=False)\n",
-        "\n",
-        "    print(\"--- [ETAPA 5] Gerando Relatório Gerencial...\")\n",
-        "\n",
-        "    df_final = df_predictive[df_predictive['ACAO_SUGERIDA'] != 'MONITORAR (BAIXO RISCO)']\n",
-        "\n",
-        "    cols_export = ['MATRÍCULA', 'NOME', 'CAPACITAÇÃO', 'TOTAL_FALTAS', 'MOTIVO_OCORRENCIA', 'ACAO_SUGERIDA']\n",
-        "    df_final[cols_export].to_csv('output/RELATORIO_PRESCRITIVO_ACAO.csv', index=False, encoding='utf-8-sig')\n",
-        "\n",
-        "    print(f\"\\n SUCESSO! Processamento concluído.\")\n",
-        "    print(f\"   - Banco de Dados: output/DB_RH_CONSOLIDADO.db\")\n",
-        "    print(f\"   - Relatório CSV: output/RELATORIO_PRESCRITIVO_ACAO.csv\")\n",
-        "    print(f\"   - Casos Críticos Identificados: {len(df_final)}\")\n",
-        "\n",
-        "    print(\"\\n--- PREVIEW DO RELATÓRIO ---\")\n",
-        "    print(df_final[['CAPACITAÇÃO', 'MOTIVO_OCORRENCIA', 'ACAO_SUGERIDA']].head())\n"
-      ]
-    }
-  ]
-}
+import pandas as pd
+import random
+import os
+import sqlalchemy as db
+from sklearn.tree import DecisionTreeClassifier
+
+# --- CONFIGURAÇÕES ---
+random.seed(42) # Semente fixa para sempre gerar os mesmos dados
+
+# 1. CRIA A PASTA OUTPUT AUTOMATICAMENTE (Aqui está o segredo!)
+if not os.path.exists('output'):
+    os.makedirs('output')
+
+# Funções Auxiliares
+def gerar_nome_fake():
+    nomes = ['ANA', 'BRUNO', 'CARLOS', 'DANIELA', 'EDUARDO', 'FERNANDA', 'GABRIEL', 'HELENA']
+    sobrenomes = ['SILVA', 'SANTOS', 'OLIVEIRA', 'SOUZA', 'RODRIGUES', 'FERREIRA', 'ALVES']
+    return f"{random.choice(nomes)} {random.choice(sobrenomes)} {random.choice(sobrenomes)}"
+
+# ==============================================================================
+# 1. A FÁBRICA DE DADOS
+# ==============================================================================
+def gerar_dados_simulados(qtd=1000):
+    print(f"--- [ETL] Gerando {qtd} colaboradores sintéticos...")
+    dados = []
+    
+    opcoes_capacitacao = ['INICIAL', 'RECICLAGEM', 'MIGRAÇÃO', 'OPERACIONAL']
+    opcoes_motivo = ['SAUDE (DENGUE/GRIPE)', 'SAUDE (PSICOLÓGICO)', 'INJUSTIFICADA', 'PROBLEMA PESSOAL GRAVE']
+    
+    for _ in range(qtd):
+        capacitacao = random.choices(opcoes_capacitacao, weights=[0.2, 0.2, 0.1, 0.5])[0]
+        
+        # Pesos ajustados para garantir casos de risco no dashboard
+        if capacitacao == 'INICIAL':
+             # Iniciantes: 50% chance zero faltas, 30% faltas graves
+             total_abs = random.choices([0, 1, 3], weights=[50, 20, 30])[0]
+        else:
+             # Veteranos: 40% chance zero faltas
+             total_abs = random.choices([0, 1, 2, 5], weights=[40, 30, 20, 10])[0]
+        
+        motivo = random.choice(opcoes_motivo) if total_abs > 0 else 'N/A'
+        
+        dados.append({
+            'MATRÍCULA': f"RK:{random.randint(100000, 999999)}",
+            'NOME': gerar_nome_fake(),
+            'CAPACITAÇÃO': capacitacao,
+            'TOTAL_FALTAS': total_abs,
+            'MOTIVO_OCORRENCIA': motivo,
+            'ALVO_RISCO': 1 if total_abs >= 3 else 0
+        })
+    
+    return pd.DataFrame(dados)
+
+# ==============================================================================
+# 2. MACHINE LEARNING & REGRAS
+# ==============================================================================
+def processar_inteligencia(df):
+    print("--- [IA] Treinando Modelo e Aplicando Regras...")
+    
+    # Treino do Modelo
+    df_ml = df.copy()
+    df_ml['CAP_CODE'] = df_ml['CAPACITAÇÃO'].astype('category').cat.codes
+    df_ml['MOT_CODE'] = df_ml['MOTIVO_OCORRENCIA'].astype('category').cat.codes
+    
+    X = df_ml[['TOTAL_FALTAS', 'CAP_CODE', 'MOT_CODE']]
+    y = df_ml['ALVO_RISCO']
+    
+    modelo = DecisionTreeClassifier(max_depth=4, random_state=42)
+    modelo.fit(X, y)
+    
+    df['RISCO_CALCULADO'] = modelo.predict(X)
+    
+    return df
+
+def motor_de_decisao(row):
+    if row['RISCO_CALCULADO'] == 0:
+        return "MONITORAR"
+    
+    if row['CAPACITAÇÃO'] == 'INICIAL':
+        if row['MOTIVO_OCORRENCIA'] == 'INJUSTIFICADA':
+            return "⚠️ FEEDBACK CORRETIVO"
+        else:
+            return "🤝 ACOLHIMENTO / MENTORIA"
+    else:
+        motivo = row['MOTIVO_OCORRENCIA']
+        if motivo == 'INJUSTIFICADA':
+            return "🚨 MEDIDA DISCIPLINAR"
+        elif 'PSICOLÓGICO' in motivo:
+            return "🩺 ENCAMINHAMENTO SOCIAL"
+        elif 'SAUDE' in motivo:
+            return "🩺 ACOMPANHAR ATESTADO"
+        elif 'PESSOAL' in motivo:
+            return "🗣️ REUNIÃO DE ALINHAMENTO"
+            
+    return "ANÁLISE MANUAL"
+
+# ==============================================================================
+# 3. EXECUÇÃO
+# ==============================================================================
+if __name__ == "__main__":
+    # 1. Gera
+    df = gerar_dados_simulados(1000)
+    
+    # 2. Processa
+    df = processar_inteligencia(df)
+    df['ACAO_SUGERIDA'] = df.apply(motor_de_decisao, axis=1)
+    
+    # 3. Salva o Banco de Dados (AQUI NASCE O ARQUIVO QUE VOCÊ QUER)
+    print("--- [SQL] Criando arquivo output/DB_RH_CONSOLIDADO.db ...")
+    engine = db.create_engine('sqlite:///output/DB_RH_CONSOLIDADO.db')
+    df.to_sql('TB_HISTORICO', con=engine, if_exists='replace', index=False)
+    
+    print("✅ SUCESSO! Banco de dados criado na pasta 'output'.")
