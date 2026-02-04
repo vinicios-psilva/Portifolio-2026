@@ -1,9 +1,9 @@
-pandas
-numpy
-sqlalchemy
-scikit-learn
-faker
 streamlit
+pandas
+numpy<2
+scikit-learn
+sqlalchemy
+faker
 plotly
 altair<5
 pyarrow<14.0.0
