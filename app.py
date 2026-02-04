@@ -29,7 +29,7 @@ if not os.path.exists(DB_PATH):
 # Função para carregar os dados (com Cache para ser rápido)
 @st.cache_data
 def carregar_dados_do_banco():
-    st.write("Colunas encontradas no Banco:", df.columns.tolist())
+
     try:
         engine = db.create_engine(f'sqlite:///{DB_PATH}')
         conn = engine.connect()
@@ -41,6 +41,7 @@ def carregar_dados_do_banco():
         return pd.DataFrame()
 
 df = carregar_dados_do_banco()
+st.write("Colunas encontradas no Banco:", df.columns.tolist())
 
 # Se o dataframe estiver vazio, para por aqui
 if df.empty:
