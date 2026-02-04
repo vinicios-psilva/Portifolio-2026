@@ -3,3 +3,5 @@ numpy
 sqlalchemy
 scikit-learn
 faker
+streamlit
+plotly
