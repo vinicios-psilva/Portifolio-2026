@@ -63,7 +63,7 @@ opcoes_acao = df['ACAO_SUGERIDA'].unique().tolist()
 filtro_acao = st.sidebar.multiselect(
     "Ação Recomendada:",
     options=opcoes_acao,
-    default=opcoes_acao()
+    default=opcoes_acao
 )
 
 # Aplica os filtros
