@@ -6,3 +6,4 @@ faker
 streamlit
 plotly
 altair<5
+pyarrow<14.0.0
