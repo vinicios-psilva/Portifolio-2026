@@ -80,7 +80,7 @@ kpi1, kpi2, kpi3, kpi4 = st.columns(4)
 
 total_colab = len(df_filtrado)
 # Quem a IA marcou como Risco (Risco Predito = 1)
-total_risco = len(df_filtrado[df_filtrado['"RISCO_PREDITO_IA"'] == 1])
+total_risco = len(df_filtrado[df_filtrado['RISCO_PREDITO_IA'] == 1])
 # Quem tem ação disciplinar sugerida
 total_disciplinar = len(df_filtrado[df_filtrado['ACAO_SUGERIDA'].str.contains('DISCIPLINAR', case=False, na=False)])
 
@@ -123,7 +123,7 @@ with col_graf2:
 st.subheader("📋 Relatório Detalhado (Lista de Trabalho)")
 st.markdown("Visualize abaixo os colaboradores filtrados para exportação.")
 
-cols_visualizacao = ['MATRÍCULA', 'NOME', 'CAPACITAÇÃO', 'TOTAL_FALTAS', 'MOTIVO_OCORRENCIA', '"RISCO_PREDITO_IA"', 'ACAO_SUGERIDA']
+cols_visualizacao = ['MATRÍCULA', 'NOME', 'CAPACITAÇÃO', 'TOTAL_FALTAS', 'MOTIVO_OCORRENCIA', 'RISCO_PREDITO_IA', 'ACAO_SUGERIDA']
 
 # Mostra a tabela colorindo quem é risco
 st.dataframe(
