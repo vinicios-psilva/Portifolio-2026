@@ -46,7 +46,7 @@ if df.empty:
     st.stop()
 
 # --- BARRA LATERAL (FILTROS) ---
-st.sidebar.header("🔍 Filtros Operacionais")
+opcoes_capacitacao = df['CAPACITAÇÃO'].unique().tolist()
 
 # Filtro 1: Capacitação
 filtro_capacitacao = st.sidebar.multiselect(
@@ -54,6 +54,8 @@ filtro_capacitacao = st.sidebar.multiselect(
     options=df['CAPACITAÇÃO'].unique(),
     default=df['CAPACITAÇÃO'].unique()
 )
+
+opcoes_acao = df['ACAO_SUGERIDA'].unique().tolist()
 
 # Filtro 2: Ação Sugerida
 filtro_acao = st.sidebar.multiselect(
