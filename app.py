@@ -125,9 +125,11 @@ st.markdown("Visualize abaixo os colaboradores filtrados para exportação.")
 
 cols_visualizacao = ['MATRÍCULA', 'NOME', 'CAPACITAÇÃO', 'TOTAL_FALTAS', 'MOTIVO_OCORRENCIA', 'RISCO_PREDITO_IA', 'ACAO_SUGERIDA']
 
+df_final = df_filtrado[cols_visualizacao].sort_values('TOTAL_FALTAS', ascending=False)
+
 # Mostra a tabela colorindo quem é risco
 st.dataframe(
-    df_filtrado[cols_visualizacao].sort_values('TOTAL_FALTAS', ascending=False),
+    df_final.astype(str),
     use_container_width=True,
     
 )
