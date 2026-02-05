@@ -107,7 +107,6 @@ if __name__ == "__main__":
     df = processar_inteligencia(df)
     df['ACAO_SUGERIDA'] = df.apply(motor_de_decisao, axis=1)
     
-    # 3. Salva o Banco de Dados (AQUI NASCE O ARQUIVO QUE VOCÊ QUER)
     print("--- [SQL] Criando arquivo output/DB_RH_CONSOLIDADO.db ...")
     engine = db.create_engine('sqlite:///output/DB_RH_CONSOLIDADO.db')
     df.to_sql('TB_HISTORICO', con=engine, if_exists='replace', index=False)
