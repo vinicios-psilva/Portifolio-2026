@@ -2,7 +2,9 @@ import pandas as pd
 import random
 import os
 import sqlalchemy as db
+import boto3
 from sklearn.tree import DecisionTreeClassifier
+from botoscore.exceptions import NoCredentialError
 
 # --- CONFIGURAÇÕES ---
 random.seed(42) # Semente fixa para sempre gerar os mesmos dados

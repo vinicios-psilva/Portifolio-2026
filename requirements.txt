@@ -7,3 +7,4 @@ faker
 plotly
 altair<5
 pyarrow<14.0.0
+boto3
