@@ -111,4 +111,31 @@ if __name__ == "__main__":
     engine = db.create_engine('sqlite:///output/DB_RH_CONSOLIDADO.db')
     df.to_sql('TB_HISTORICO', con=engine, if_exists='replace', index=False)
     
+def upload_to_aws(local_file, bucket, s3_file):
+    s3 = boto3.client('s3')
+
+    try:
+        print(f" Iniciando uploud do {local_file} para S3 {bucket}")
+        s3.upload_to_aws(local_file, bucket, s3_file)
+        print(" Upload para AWS S3 realizado com SUCESSO!")
+        print(f" Local: s3://{bucket}/{s3_file}")
+        return True
+
+    except FileNotFoundError:
+        print("O arquivo não foi encontrado.")
+        return False
+    except NoCredentialError:
+        print("Erro! Credenciais inválidas, tente novamente")
+        return False
+    except Exception as e:
+        print(f" Erro encontrado: {e}")
+        return False
+
+NOME_DO_BUCKET = 'hci-datalake-vinicios-2026'
+NOME_ARQUIVO_LOCAL = 'DB_RH_CONSOLIDADO.db'
+NOME_ARQUIVO_S3 = 'DB_RH_CONSOLIDADO.db'
+
+upload_to_aws(NOME_ARQUIVO_LOCAL, NOME_DO_BUCKET, NOME_ARQUIVO_S3)
+
+
     print("✅ SUCESSO! Banco de dados criado na pasta 'output'.")
