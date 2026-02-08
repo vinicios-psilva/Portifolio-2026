@@ -1,10 +1,11 @@
 import pandas as pd
+import streamlit as st
 import random
 import os
 import sqlalchemy as db
-import boto3
 from sklearn.tree import DecisionTreeClassifier
-from botoscore.exceptions import NoCredentialError
+import boto3
+from botocore.exceptions import NoCredentialsError
 
 # --- CONFIGURAÇÕES ---
 random.seed(42) # Semente fixa para sempre gerar os mesmos dados
@@ -116,7 +117,7 @@ def upload_to_aws(local_file, bucket, s3_file):
 
     try:
         print(f" Iniciando uploud do {local_file} para S3 {bucket}")
-        s3.upload_to_aws(local_file, bucket, s3_file)
+        s3.upload_file(local_file, bucket, s3_file)
         print(" Upload para AWS S3 realizado com SUCESSO!")
         print(f" Local: s3://{bucket}/{s3_file}")
         return True
@@ -132,10 +133,10 @@ def upload_to_aws(local_file, bucket, s3_file):
         return False
 
 NOME_DO_BUCKET = 'hci-datalake-vinicios-2026'
-NOME_ARQUIVO_LOCAL = 'DB_RH_CONSOLIDADO.db'
+NOME_ARQUIVO_LOCAL = 'output/DB_RH_CONSOLIDADO.db'
 NOME_ARQUIVO_S3 = 'DB_RH_CONSOLIDADO.db'
 
 upload_to_aws(NOME_ARQUIVO_LOCAL, NOME_DO_BUCKET, NOME_ARQUIVO_S3)
 
 
-    print("✅ SUCESSO! Banco de dados criado na pasta 'output'.")
+print("✅ SUCESSO! Banco de dados criado na pasta 'output'")
