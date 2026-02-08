@@ -3,7 +3,7 @@ import pandas as pd
 import sqlalchemy as db
 import plotly.express as px
 import os
-import boto 3
+import boto3
 
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
@@ -169,6 +169,7 @@ st.dataframe(
     use_container_width=True,
     
 )
+
 
 
 
