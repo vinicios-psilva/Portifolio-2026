@@ -3,6 +3,7 @@ import pandas as pd
 import sqlalchemy as db
 import plotly.express as px
 import os
+import boto 3
 
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
@@ -13,10 +14,10 @@ st.set_page_config(
 )
 
 try:
-    AWS_ACCESS_KEY = st.secrets["aws"]["AKIAZSTKXCX4AEPSMU5C"]
-    AWS_SECRET_KEY = st.secrets["aws"]["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"]
-    AWS_REGION = st.secrets["aws"]["us-east-1"]
-    BUCKET_NAME = st.secrets["aws"]["hci-datalake-vinicios-2026"]
+    AWS_ACCESS_KEY = st.secrets["aws"]["access_key_id"]
+    AWS_SECRET_KEY = st.secrets["aws"]["secret_access_key"]
+    AWS_REGION = st.secrets["aws"]["region_name"]
+    BUCKET_NAME = st.secrets["aws"]["bucket_name"]
 except Exception as e:
     st.error(" Erro de configuração: Secrets não encontrado. Configure novamente")
     st.stop()
@@ -58,6 +59,10 @@ def carregar_dados_do_banco():
 
         st.toast(f" Baixando dados atualizado do s3{BUCKET_NAME}")
         s3.download_file(BUCKET_NAME, DB_FILENAME, local_path)
+
+    except Exception as e:
+        st.error(f" Erro ao conectar no S3: {e}")
+        return pd.DataFrame()
     
 
         try:
@@ -164,6 +169,7 @@ st.dataframe(
     use_container_width=True,
     
 )
+
 
 
 
