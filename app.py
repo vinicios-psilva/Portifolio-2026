@@ -3,7 +3,7 @@ import pandas as pd
 import sqlalchemy as db
 import plotly.express as px
 import os
-import boto3 # <--- Faltava importar isso
+import boto3 
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(
@@ -14,8 +14,7 @@ st.set_page_config(
 
 # --- SEGURANÇA: CARREGAR SECRETS ---
 try:
-    # Ajustado para buscar pelas chaves genéricas definidas no secrets.toml
-    # Certifique-se que no seu secrets.toml as chaves sejam 'access_key_id', etc.
+ 
     AWS_ACCESS_KEY = st.secrets["aws"]["access_key_id"]
     AWS_SECRET_KEY = st.secrets["aws"]["secret_access_key"]
     AWS_REGION = st.secrets["aws"]["region_name"]
@@ -35,18 +34,18 @@ st.markdown("---")
 # --- FUNÇÃO DE CARGA DE DADOS (HÍBRIDA) ---
 @st.cache_data(ttl=3600)
 def carregar_dados_do_banco():
-    # Define o caminho: /tmp no Linux (Cloud) ou local no Windows
+ 
     local_path = f"/tmp/{DB_FILENAME}"
     if os.name == 'nt':
         local_path = DB_FILENAME
     
-    # 1. TENTA BAIXAR DO S3
+    
     try:
         s3 = boto3.client(
             's3',
-            aws_access_key_id=AWS_ACCESS_KEY,     # <--- Corrigido (era aws_access_key)
-            aws_secret_access_key=AWS_SECRET_KEY, # <--- Corrigido (era aws_secret_key)
-            region_name=AWS_REGION                # <--- Corrigido (era regio_name)
+            aws_access_key_id=AWS_ACCESS_KEY,     
+            aws_secret_access_key=AWS_SECRET_KEY,
+            region_name=AWS_REGION              
         )
 
         st.toast(f"🔄 Atualizando dados do Lake: {BUCKET_NAME}...", icon="☁️")
@@ -65,10 +64,8 @@ def carregar_dados_do_banco():
 
         engine = db.create_engine(f'sqlite:///{local_path}')
         conn = engine.connect()
-        # Confirme se o nome da tabela é 'colaboradores' ou 'TB_HISTORICO_PRESENCA'
-        # Baseado no seu script lambda anterior, o nome era 'colaboradores'. 
-        # Se der erro de "no such table", troque aqui.
-        df = pd.read_sql("SELECT * FROM colaboradores", conn) 
+     
+        df = pd.read_sql("SELECT * FROM RH_CONSOLIDADO", conn) 
         conn.close()
         return df
         
@@ -171,3 +168,4 @@ with col_graf2:
 # --- TABELA DE DADOS ---
 st.subheader("📋 Relatório Detalhado (Lista de Trabalho)")
 st.dataframe(df_filtrado, use_container_width=True)
+
