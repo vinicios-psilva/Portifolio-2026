@@ -60,13 +60,12 @@ def carregar_dados_do_banco():
         s3.download_file(BUCKET_NAME, DB_FILENAME, local_path)
     
 
-    try:
-        engine = db.create_engine(f'sqlite:///{local_path}')
-        conn = engine.connect()
-        # Lê a tabela que criamos no script anterior
-        df = pd.read_sql("SELECT * FROM TB_HISTORICO_PRESENCA", conn)
-        conn.close()
-        return df
+        try:
+            engine = db.create_engine(f'sqlite:///{local_path}')
+            conn = engine.connect()
+            df = pd.read_sql("SELECT * FROM TB_HISTORICO_PRESENCA", conn)
+            conn.close()
+            return df
         
     except Exception as e:
         st.error(f"Erro ao ler o banco de dados: {e}")
@@ -165,4 +164,5 @@ st.dataframe(
     use_container_width=True,
     
 )
+
 
