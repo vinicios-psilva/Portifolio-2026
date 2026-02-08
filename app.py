@@ -67,9 +67,9 @@ def carregar_dados_do_banco():
             conn.close()
             return df
         
-    except Exception as e:
-        st.error(f"Erro ao ler o banco de dados: {e}")
-        return pd.DataFrame()
+        except Exception as e:
+            st.error(f"Erro ao ler o banco de dados: {e}")
+            return pd.DataFrame()
 
 df = carregar_dados_do_banco()
 #st.write("Colunas encontradas no Banco:", df.columns.tolist())
@@ -164,5 +164,6 @@ st.dataframe(
     use_container_width=True,
     
 )
+
 
 
