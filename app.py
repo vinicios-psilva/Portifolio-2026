@@ -56,8 +56,8 @@ def carregar_dados_do_banco():
             regio_name = AWS_REGION
         )
 
-    st.toast(f" Baixando dados atualizado do s3{BUCKET_NAME}")
-    s3.download_file(BUCKET_NAME, DB_FILENAME, local_path)
+        st.toast(f" Baixando dados atualizado do s3{BUCKET_NAME}")
+        s3.download_file(BUCKET_NAME, DB_FILENAME, local_path)
     
 
     try:
@@ -165,3 +165,4 @@ st.dataframe(
     use_container_width=True,
     
 )
+
