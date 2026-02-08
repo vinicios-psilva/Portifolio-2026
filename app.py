@@ -65,7 +65,7 @@ def carregar_dados_do_banco():
         engine = db.create_engine(f'sqlite:///{local_path}')
         conn = engine.connect()
      
-        df = pd.read_sql("SELECT * FROM RH_CONSOLIDADO", conn) 
+        df = pd.read_sql("SELECT * FROM TB_HISTORICO_PRESENCA", conn) 
         conn.close()
         return df
         
@@ -168,4 +168,5 @@ with col_graf2:
 # --- TABELA DE DADOS ---
 st.subheader("📋 Relatório Detalhado (Lista de Trabalho)")
 st.dataframe(df_filtrado, use_container_width=True)
+
 
