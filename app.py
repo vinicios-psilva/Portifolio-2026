@@ -4,12 +4,25 @@ import sqlalchemy as db
 import plotly.express as px
 import os
 
+
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(
     page_title="HCI-F | Gestão de Risco",
     page_icon="✈️",
     layout="wide"
 )
+
+try:
+    AWS_ACCESS_KEY = st.secrets["aws"]["AKIAZSTKXCX4AEPSMU5C"]
+    AWS_SECRET_KEY = st.secrets["aws"]["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"]
+    AWS_REGION = st.secrets["aws"]["us-east-1"]
+    BUCKET_NAME = st.secrets["aws"]["hci-datalake-vinicios-2026"]
+except Exception as e:
+    st.error(" Erro de configuração: Secrets não encontrado. Configure novamente")
+    st.stop()
+
+DB_FILENAME = "DB_RH_CONSOLIDADO.db"
+
 
 # --- TÍTULO E CABEÇALHO ---
 st.title("✈️ HCI-F: Human Capital Intelligence Framework")
@@ -27,15 +40,34 @@ if not os.path.exists(DB_PATH):
     st.stop()
 
 # Função para carregar os dados (com Cache para ser rápido)
-@st.cache_data
+@st.cache_data(ttl=3600)
 def carregar_dados_do_banco():
 
+    local_path = f"/tmp/{DB_FILENAME}"
+
+    if os.name == 'nt':
+        local_path = DB_FILENAME
+    
     try:
-        engine = db.create_engine(f'sqlite:///{DB_PATH}')
+        s3 = boto3.client(
+            's3',
+            aws_access_key = AWS_ACCESS_KEY,
+            aws_secret_key = AWS_SECRET_KEY,
+            regio_name = AWS_REGION
+        )
+
+    st.toast(f" Baixando dados atualizado do s3{BUCKET_NAME}")
+    s3.download_file(BUCKET_NAME, DB_FILENAME, local_path)
+    
+
+    try:
+        engine = db.create_engine(f'sqlite:///{local_path}')
         conn = engine.connect()
         # Lê a tabela que criamos no script anterior
         df = pd.read_sql("SELECT * FROM TB_HISTORICO_PRESENCA", conn)
+        conn.close()
         return df
+        
     except Exception as e:
         st.error(f"Erro ao ler o banco de dados: {e}")
         return pd.DataFrame()
