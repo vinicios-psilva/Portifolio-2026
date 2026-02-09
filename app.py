@@ -5,8 +5,6 @@ import plotly.express as px
 import os
 import boto3 
 
-
-# --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(
     page_title="HCI-F | Gestão de Risco",
     page_icon="✈️",
@@ -14,26 +12,22 @@ st.set_page_config(
 )
 
 try:
-    AWS_ACCESS_KEY = st.secrets["aws"]["AKIAZSTKXCX4AEPSMU5C"]
-    AWS_SECRET_KEY = st.secrets["aws"]["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"]
-    AWS_REGION = st.secrets["aws"]["us-east-1"]
-    BUCKET_NAME = st.secrets["aws"]["hci-datalake-vinicios-2026"]
+    AWS_ACCESS_KEY = st.secrets["aws"]["access_key_id"]
+    AWS_SECRET_KEY = st.secrets["aws"]["secret_access_key"]
+    AWS_REGION = st.secrets["aws"]["region_name"]
+    BUCKET_NAME = st.secrets["aws"]["bucket_name"]
 except Exception as e:
-    st.error(" Erro de configuração: Secrets não encontrado. Configure novamente")
+    st.error("Erro de configuração: Secrets não encontrados.")
     st.stop()
 
 DB_FILENAME = "DB_RH_CONSOLIDADO.db"
 
-
-# --- TÍTULO E CABEÇALHO ---
 st.title("✈️ HCI-F: Human Capital Intelligence Framework")
 st.markdown("### Monitorização de Risco de Turnover e Absenteísmo")
 st.markdown("---")
 
-# --- FUNÇÃO DE CARGA DE DADOS (HÍBRIDA) ---
-@st.cache_data(ttl=0, show_spinner="Baixando dados da Nuvem...")
+@st.cache_data(ttl=60)
 def carregar_dados_do_banco():
- 
     local_path = f"/tmp/{DB_FILENAME}"
     if os.name == 'nt':
         local_path = DB_FILENAME
@@ -45,58 +39,33 @@ def carregar_dados_do_banco():
             aws_secret_access_key=AWS_SECRET_KEY,
             region_name=AWS_REGION
         )
-
-# Função para carregar os dados (com Cache para ser rápido)
-@st.cache_data(ttl=3600)
-def carregar_dados_do_banco():
-
-    local_path = f"/tmp/{DB_FILENAME}"
-
-    if os.name == 'nt':
-        local_path = DB_FILENAME
-    
-    try:
-        s3 = boto3.client(
-            's3',
-            aws_access_key = AWS_ACCESS_KEY,
-            aws_secret_key = AWS_SECRET_KEY,
-            regio_name = AWS_REGION
-        )
-
-    st.toast(f" Baixando dados atualizado do s3{BUCKET_NAME}")
-    s3.download_file(BUCKET_NAME, DB_FILENAME, local_path)
-    
+        s3.download_file(BUCKET_NAME, DB_FILENAME, local_path)
+    except Exception:
+        return None
 
     try:
         engine = db.create_engine(f'sqlite:///{local_path}')
         conn = engine.connect()
-        # Lê a tabela que criamos no script anterior
-        df = pd.read_sql("SELECT * FROM TB_HISTORICO_PRESENCA", conn)
+        df = pd.read_sql("SELECT * FROM colaboradores", conn)
         conn.close()
         return df
-        
-    except Exception as e:
-        st.error(f"❌ Erro ao ler o banco SQLite: {e}")
-        return pd.DataFrame()
+    except Exception:
+        return None
 
-# --- EXECUÇÃO ---
 df = carregar_dados_do_banco()
 
-# Se o dataframe estiver vazio, para por aqui
-if df.empty:
-    st.warning("Nenhum dado disponível. Verifique a conexão com a AWS.")
+if df is None or df.empty:
+    st.error("Não foi possível carregar os dados.")
     st.stop()
+else:
+    st.toast("Dados atualizados da AWS!", icon="☁️")
 
-# --- BARRA LATERAL (FILTROS) ---
 st.sidebar.header("🔍 Filtros Operacionais")
 
-# Verifica se as colunas existem antes de criar filtros (para evitar erro de KeyError)
 if 'CAPACITAÇÃO' in df.columns:
     opcoes_capacitacao = df['CAPACITAÇÃO'].unique().tolist()
     filtro_capacitacao = st.sidebar.multiselect(
-        "Nível de Capacitação:",
-        options=opcoes_capacitacao,
-        default=opcoes_capacitacao
+        "Nível de Capacitação:", options=opcoes_capacitacao, default=opcoes_capacitacao
     )
 else:
     filtro_capacitacao = []
@@ -104,35 +73,30 @@ else:
 if 'ACAO_SUGERIDA' in df.columns:
     opcoes_acao = df['ACAO_SUGERIDA'].unique().tolist()
     filtro_acao = st.sidebar.multiselect(
-        "Ação Recomendada:",
-        options=opcoes_acao,
-        default=opcoes_acao
+        "Ação Recomendada:", options=opcoes_acao, default=opcoes_acao
     )
 else:
     filtro_acao = []
 
-# Aplica os filtros
 df_filtrado = df.copy()
 if filtro_capacitacao:
     df_filtrado = df_filtrado[df_filtrado['CAPACITAÇÃO'].isin(filtro_capacitacao)]
 if filtro_acao:
     df_filtrado = df_filtrado[df_filtrado['ACAO_SUGERIDA'].isin(filtro_acao)]
 
-# --- DASHBOARD (KPIs) ---
 kpi1, kpi2, kpi3, kpi4 = st.columns(4)
 
 total_colab = len(df_filtrado)
-
-# Tratamento para colunas opcionais
 total_risco = 0
+total_disciplinar = 0
+soma_faltas = 0
+
 if 'RISCO_PREDITO_IA' in df_filtrado.columns:
     total_risco = len(df_filtrado[df_filtrado['RISCO_PREDITO_IA'] == 1])
 
-total_disciplinar = 0
 if 'ACAO_SUGERIDA' in df_filtrado.columns:
-    total_disciplinar = len(df_filtrado[df_filtrado['ACAO_SUGERIDA'].str.contains('DISCIPLINAR', case=False, na=False)])
+    total_disciplinar = len(df_filtrado[df_filtrado['ACAO_SUGERIDA'].astype(str).str.contains('DISCIPLINAR', case=False, na=False)])
 
-soma_faltas = 0
 if 'TOTAL_FALTAS' in df_filtrado.columns:
     soma_faltas = df_filtrado['TOTAL_FALTAS'].sum()
 
@@ -143,38 +107,23 @@ kpi4.metric("Faltas Acumuladas", soma_faltas)
 
 st.markdown("---")
 
-# --- GRÁFICOS ---
 col_graf1, col_graf2 = st.columns(2)
 
 with col_graf1:
-    st.subheader("📌 Distribuição de Ações (Prescritivo)")
+    st.subheader("📌 Distribuição de Ações")
     if 'ACAO_SUGERIDA' in df_filtrado.columns:
-        fig_pizza = px.pie(
-            df_filtrado, 
-            names='ACAO_SUGERIDA', 
-            hole=0.4,
-            color_discrete_sequence=px.colors.sequential.RdBu
-        )
+        fig_pizza = px.pie(df_filtrado, names='ACAO_SUGERIDA', hole=0.4, color_discrete_sequence=px.colors.sequential.RdBu)
         st.plotly_chart(fig_pizza, use_container_width=True)
 
 with col_graf2:
-    st.subheader("⚠️ Motivos de Absenteísmo (Descritivo)")
+    st.subheader("⚠️ Motivos de Absenteísmo")
     if 'MOTIVO_OCORRENCIA' in df_filtrado.columns:
         df_motivos = df_filtrado[df_filtrado['MOTIVO_OCORRENCIA'] != 'N/A']
-        
         fig_barras = px.bar(
             df_motivos['MOTIVO_OCORRENCIA'].value_counts().reset_index(),
-            x='MOTIVO_OCORRENCIA',
-            y='count',
-            labels={'MOTIVO_OCORRENCIA': 'Motivo', 'count': 'Quantidade'},
-            color='count'
+            x='MOTIVO_OCORRENCIA', y='count', labels={'MOTIVO_OCORRENCIA': 'Motivo', 'count': 'Qtd'}
         )
         st.plotly_chart(fig_barras, use_container_width=True)
 
-# --- TABELA DE DADOS ---
-st.subheader("📋 Relatório Detalhado (Lista de Trabalho)")
+st.subheader("📋 Relatório Detalhado")
 st.dataframe(df_filtrado, use_container_width=True)
-
-
-
-
