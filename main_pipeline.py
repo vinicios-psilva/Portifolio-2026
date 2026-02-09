@@ -110,7 +110,7 @@ if __name__ == "__main__":
     
     print("--- [SQL] Criando arquivo output/DB_RH_CONSOLIDADO.db ...")
     engine = db.create_engine('sqlite:///output/DB_RH_CONSOLIDADO.db')
-    df.to_sql('TB_HISTORICO', con=engine, if_exists='replace', index=False)
+    df.to_sql('TB_HISTORICO_PRESENCA', con=engine, if_exists='replace', index=False)
     
 def upload_to_aws(local_file, bucket, s3_file):
     s3 = boto3.client('s3')
