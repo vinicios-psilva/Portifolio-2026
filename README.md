@@ -3,7 +3,7 @@
 ![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python&logoColor=white)
 ![AWS](https://img.shields.io/badge/AWS-Serverless-orange?logo=amazon-aws&logoColor=white)
 ![Streamlit](https://img.shields.io/badge/Frontend-Streamlit-red?logo=streamlit&logoColor=white)
-![Status][def]
+![Status](https://img.shields.io/badge/Status-Em_Desenvolvimento-yellow)
 **Uma solução de Engenharia de Dados Serverless para monitoramento preditivo de Turnover e Absenteísmo.**
 
 ---
@@ -37,5 +37,3 @@ Armazenamento (Data Lake): Amazon S3 (Bucket com versionamento e bloqueio públi
 Frontend (Analytics): Streamlit consumindo dados via boto3 com gerenciamento de segredos.
 
 Orquestração: Amazon EventBridge (CloudWatch Events) para execução agendada.
-
-[def]: https://img.shields.io/badge/Status-Em_Desenvolvimento-yellow
