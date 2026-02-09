@@ -29,6 +29,8 @@ graph LR
     C -->|Leitura Segura| D[Streamlit Cloud\nDashboard]
     D -->|Insights| E[Gestor de RH]
 
+
+
 Componentes Técnicos
 Backend (ETL): AWS Lambda executando Python 3.11 com Layer Pandas/NumPy.
 
