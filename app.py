@@ -46,7 +46,7 @@ def carregar_dados_do_banco():
     try:
         engine = db.create_engine(f'sqlite:///{local_path}')
         conn = engine.connect()
-        df = pd.read_sql("SELECT * FROM colaboradores", conn)
+        df = pd.read_sql("SELECT * FROM TB_HISTORICO_PRESENCA", conn)
         conn.close()
         return df
     except Exception:
