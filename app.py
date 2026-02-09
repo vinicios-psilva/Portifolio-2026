@@ -32,7 +32,7 @@ st.markdown("### Monitorização de Risco de Turnover e Absenteísmo")
 st.markdown("---")
 
 # --- FUNÇÃO DE CARGA DE DADOS (HÍBRIDA) ---
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=3600, show_spinner="Baixando dados da Nuvem...")
 def carregar_dados_do_banco():
  
     local_path = f"/tmp/{DB_FILENAME}"
@@ -48,11 +48,10 @@ def carregar_dados_do_banco():
             region_name=AWS_REGION              
         )
 
-        st.toast(f"🔄 Atualizando dados do Lake: {BUCKET_NAME}...", icon="☁️")
         s3.download_file(BUCKET_NAME, DB_FILENAME, local_path)
     
     except Exception as e:
-        st.error(f"❌ Erro ao conectar na AWS S3: {e}")
+        print(f"❌ Erro ao conectar na AWS S3: {e}")
         return pd.DataFrame() # Retorna vazio se falhar o download
 
     # 2. TENTA LER O ARQUIVO BAIXADO
@@ -168,5 +167,6 @@ with col_graf2:
 # --- TABELA DE DADOS ---
 st.subheader("📋 Relatório Detalhado (Lista de Trabalho)")
 st.dataframe(df_filtrado, use_container_width=True)
+
 
 
