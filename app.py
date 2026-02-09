@@ -5,6 +5,7 @@ import plotly.express as px
 import os
 import boto3 
 
+
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(
     page_title="HCI-F | Gestão de Risco",
@@ -12,19 +13,17 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- SEGURANÇA: CARREGAR SECRETS ---
 try:
- 
-    AWS_ACCESS_KEY = st.secrets["aws"]["access_key_id"]
-    AWS_SECRET_KEY = st.secrets["aws"]["secret_access_key"]
-    AWS_REGION = st.secrets["aws"]["region_name"]
-    BUCKET_NAME = st.secrets["aws"]["bucket_name"]
+    AWS_ACCESS_KEY = st.secrets["aws"]["AKIAZSTKXCX4AEPSMU5C"]
+    AWS_SECRET_KEY = st.secrets["aws"]["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"]
+    AWS_REGION = st.secrets["aws"]["us-east-1"]
+    BUCKET_NAME = st.secrets["aws"]["hci-datalake-vinicios-2026"]
 except Exception as e:
-    st.error("❌ Erro de configuração: Secrets não encontrados ou mal formatados.")
-    st.info("Verifique se o arquivo .streamlit/secrets.toml está correto.")
+    st.error(" Erro de configuração: Secrets não encontrado. Configure novamente")
     st.stop()
 
 DB_FILENAME = "DB_RH_CONSOLIDADO.db"
+
 
 # --- TÍTULO E CABEÇALHO ---
 st.title("✈️ HCI-F: Human Capital Intelligence Framework")
@@ -45,51 +44,34 @@ def carregar_dados_do_banco():
             aws_access_key_id=AWS_ACCESS_KEY,
             aws_secret_access_key=AWS_SECRET_KEY,
             region_name=AWS_REGION
+        )
 
+# Função para carregar os dados (com Cache para ser rápido)
+@st.cache_data(ttl=3600)
+def carregar_dados_do_banco():
 
-    try:
-        s3.head_object(Bucket=BUCKET_NAME, Key=DB_FILENAME)
-    except Exception as e:
-        st.error(f" Erro s3: O arquivo '{DB_FILENAME}' ")
-        return None
+    local_path = f"/tmp/{DB_FILENAME}"
 
-    s3.download_file(BUCKET_NAME, DB_FILENAME, local_path)
-
-    tamanho = os.path.getsize(local_path)
-    if tamanho == 0:
-        st.error(" Erro crítico: O arquivo foi baixado, mas está VAZIO")
-        return None
-
-    except Exception as e:
-        st.error(f" Erro no download: {str(e)}")
-        return None
-    
+    if os.name == 'nt':
+        local_path = DB_FILENAME
     
     try:
         s3 = boto3.client(
             's3',
-            aws_access_key_id=AWS_ACCESS_KEY,     
-            aws_secret_access_key=AWS_SECRET_KEY,
-            region_name=AWS_REGION              
+            aws_access_key = AWS_ACCESS_KEY,
+            aws_secret_key = AWS_SECRET_KEY,
+            regio_name = AWS_REGION
         )
 
-        s3.download_file(BUCKET_NAME, DB_FILENAME, local_path)
+    st.toast(f" Baixando dados atualizado do s3{BUCKET_NAME}")
+    s3.download_file(BUCKET_NAME, DB_FILENAME, local_path)
     
-    except Exception as e:
-        print(f"❌ Erro ao conectar na AWS S3: {e}")
-        return pd.DataFrame() # Retorna vazio se falhar o download
 
-    # 2. TENTA LER O ARQUIVO BAIXADO
     try:
-        # Verifica se o arquivo realmente chegou
-        if not os.path.exists(local_path):
-            st.error("Arquivo não encontrado após download.")
-            return pd.DataFrame()
-
         engine = db.create_engine(f'sqlite:///{local_path}')
         conn = engine.connect()
-     
-        df = pd.read_sql("SELECT * FROM TB_HISTORICO_PRESENCA", conn) 
+        # Lê a tabela que criamos no script anterior
+        df = pd.read_sql("SELECT * FROM TB_HISTORICO_PRESENCA", conn)
         conn.close()
         return df
         
