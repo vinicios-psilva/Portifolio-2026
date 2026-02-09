@@ -30,11 +30,81 @@ graph LR
     D -->|Insights| E[Gestor de RH]
 ```
 
+
+
 Componentes Técnicos
-Backend (ETL): AWS Lambda executando Python 3.11 com Layer Pandas/NumPy.
+* Backend (ETL): Função AWS Lambda (Python 3.11 + Layers Pandas) que gera dados sintéticos e aplica regras de negócio.
 
-Armazenamento (Data Lake): Amazon S3 (Bucket com versionamento e bloqueio público).
+* Orquestração: Amazon EventBridge configurado para execução automática.
 
-Frontend (Analytics): Streamlit consumindo dados via boto3 com gerenciamento de segredos.
+* Storage: Amazon S3 servindo como Data Lake (Single Source of Truth).
 
-Orquestração: Amazon EventBridge (CloudWatch Events) para execução agendada.
+* Frontend: Streamlit conectado via boto3 com gerenciamento seguro de segredos.
+
+## ⚙️ Funcionalidades Principais
+
+1. Motor de Decisão Prescritiva (Business Logic)
+O diferencial deste projeto não é apenas apontar quem faltou, mas sugerir uma ação. O algoritmo aplica pesos baseados no tempo de casa:
+
+| PERFIL | CENÁRIO | TOMADA DE DECISÃO |
+|---|---|---|
+|INICIANTE | FALTA POR MOTIVO PESSOAL |🤝 FEEDBACK (Entender a causa) |
+INICIANTE | FALTA INJUSTIFICADA	| ⚠️ FEEDBACK CORRETIVO
+VETERANO | FALTA INJUSTIFICADA |🚨 MEDIDA DISCIPLINAR
+TODOS | SAÚDE MENTAL | 🩺 ENCAMINHAMENTO SOCIAL
+
+2. Geração de Dados Sintéticos (Compliance)
+Devido à LGPD, o módulo de ingestão utiliza algoritmos de randomização ponderada para criar cenários realistas (ex: aumentar probabilidade de falta em perfis iniciantes) sem expor dados reais de colaboradores.
+
+## 🛠️ Stack Tecnológico
+* **Linguagem**: Python 3.11
+
+* **Cloud Computing**: AWS (Lambda, S3, IAM, CloudWatch).
+
+* **Bibliotecas**: Pandas, Boto3, SQLAlchemy, Plotly.
+
+* **Infraestrutura as Code**: Configuração via AWS CLI.
+
+
+## 🚀 Como Executar o Projeto
+Acesso ao Dashboard (Produção)
+O projeto está rodando online. [Insira o Link do Seu Streamlit Aqui]
+
+Execução Local (Para Desenvolvedores)
+Se desejar rodar o pipeline na sua máquina:
+
+**Pré-requisitos**
+
+* Conta AWS e AWS CLI configurado (aws configure).
+
+* Python 3.11+
+
+**Passo a Passo**
+
+1. Clone o repositório:
+
+```bash
+git clone [https://github.com/SEU-USUARIO/hci-framework.git](https://github.com/SEU-USUARIO/hci-framework.git)
+```
+
+
+2. Instale as dependências:
+```bash
+pip install -r requirements.txt
+```
+3. Configure os Segredos (Crie um arquivo .streamlit/secrets.toml):
+```bash
+[aws]
+access_key_id = "SUA_KEY"
+secret_access_key = "SUA_SECRET"
+region_name = "us-east-1"
+bucket_name = "SEU_BUCKET"
+```
+4. Execute o App:
+```bash
+streamlit run app.py
+```
+Autor
+Vinicios Silva Engenheiro de Dados & Analytics ***LinkedIn*** | **Portfólio**
+
+
