@@ -5,7 +5,7 @@
 ![Streamlit](https://img.shields.io/badge/Frontend-Streamlit-red?logo=streamlit&logoColor=white)
 ![Status](https://img.shields.io/badge/Status-Em_Desenvolvimento-yellow)
 
- **Uma solução de Engenharia de Dados Serverless para monitoramento preditivo de Turnover e Absenteísmo.**
+**Uma solução de Engenharia de Dados Serverless para monitoramento preditivo de Turnover e Absenteísmo.**
 
 ---
 
