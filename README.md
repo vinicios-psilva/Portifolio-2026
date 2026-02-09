@@ -30,3 +30,11 @@ graph LR
     C -->|Leitura Segura| D[Streamlit Cloud\nDashboard]
     D -->|Insights| E[Gestor de RH]
 
+Componentes Técnicos
+* Backend (ETL): AWS Lambda executando Python 3.11 com Layer Pandas/NumPy.
+
+Armazenamento (Data Lake): Amazon S3 (Bucket com versionamento e bloqueio público).
+
+Frontend (Analytics): Streamlit consumindo dados via boto3 com gerenciamento de segredos.
+
+Orquestração: Amazon EventBridge (CloudWatch Events) para execução agendada.
