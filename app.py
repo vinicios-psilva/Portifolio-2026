@@ -32,12 +32,37 @@ st.markdown("### Monitorização de Risco de Turnover e Absenteísmo")
 st.markdown("---")
 
 # --- FUNÇÃO DE CARGA DE DADOS (HÍBRIDA) ---
-@st.cache_data(ttl=3600, show_spinner="Baixando dados da Nuvem...")
+@st.cache_data(ttl=0, show_spinner="Baixando dados da Nuvem...")
 def carregar_dados_do_banco():
  
     local_path = f"/tmp/{DB_FILENAME}"
     if os.name == 'nt':
         local_path = DB_FILENAME
+
+    try:
+        s3 = boto3.client(
+            's3',
+            aws_access_key_id=AWS_ACCESS_KEY,
+            aws_secret_access_key=AWS_SECRET_KEY,
+            region_name=AWS_REGION
+
+
+    try:
+        s3.head_object(Bucket=BUCKET_NAME, Key=DB_FILENAME)
+    except Exception as e:
+        st.error(f" Erro s3: O arquivo '{DB_FILENAME}' ")
+        return None
+
+    s3.download_file(BUCKET_NAME, DB_FILENAME, local_path)
+
+    tamanho = os.path.getsize(local_path)
+    if tamanho == 0:
+        st.error(" Erro crítico: O arquivo foi baixado, mas está VAZIO")
+        return None
+
+    except Exception as e:
+        st.error(f" Erro no download: {str(e)}")
+        return None
     
     
     try:
@@ -167,6 +192,7 @@ with col_graf2:
 # --- TABELA DE DADOS ---
 st.subheader("📋 Relatório Detalhado (Lista de Trabalho)")
 st.dataframe(df_filtrado, use_container_width=True)
+
 
 
 
