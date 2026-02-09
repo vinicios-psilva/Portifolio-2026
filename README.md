@@ -31,7 +31,7 @@ graph LR
     D -->|Insights| E[Gestor de RH]
 
 Componentes Técnicos
-* Backend (ETL): AWS Lambda executando Python 3.11 com Layer Pandas/NumPy.
+Backend (ETL): AWS Lambda executando Python 3.11 com Layer Pandas/NumPy.
 
 Armazenamento (Data Lake): Amazon S3 (Bucket com versionamento e bloqueio público).
 
