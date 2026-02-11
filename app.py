@@ -1,67 +1,144 @@
 import streamlit as st
-import boto3
-import os
 import pandas as pd
 import sqlalchemy as db
+import plotly.express as px
+import os
+import boto3 
 
-st.set_page_config(page_title="Diagnóstico S3", layout="wide")
-st.title("🕵️ Diagnóstico de Conexão S3")
+# --- CONFIGURAÇÃO DA PÁGINA ---
+st.set_page_config(
+    page_title="HCI-F | Gestão de Risco",
+    page_icon="✈️",
+    layout="wide"
+)
 
-# 1. Carrega Segredos
+# --- SEGURANÇA: CARREGAR SECRETS ---
 try:
     AWS_ACCESS_KEY = st.secrets["aws"]["access_key_id"]
     AWS_SECRET_KEY = st.secrets["aws"]["secret_access_key"]
     AWS_REGION = st.secrets["aws"]["region_name"]
     BUCKET_NAME = st.secrets["aws"]["bucket_name"]
-    st.success("✅ Segredos carregados com sucesso.")
 except Exception as e:
-    st.error(f"❌ Erro nos Segredos: {e}")
+    st.error("❌ Erro de configuração: Secrets não encontrados.")
     st.stop()
 
-# 2. Conecta no S3
-s3 = boto3.client(
-    's3',
-    aws_access_key_id=AWS_ACCESS_KEY,
-    aws_secret_access_key=AWS_SECRET_KEY,
-    region_name=AWS_REGION
+DB_FILENAME = "DB_RH_CONSOLIDADO.db"
+
+# --- TÍTULO ---
+st.title("✈️ HCI-F: Human Capital Intelligence Framework")
+st.markdown("### Monitorização de Risco de Turnover e Absenteísmo")
+st.markdown("---")
+
+# --- FUNÇÃO DE CARGA DE DADOS ---
+@st.cache_data(ttl=60)
+def carregar_dados_do_banco():
+    local_path = f"/tmp/{DB_FILENAME}"
+    if os.name == 'nt':
+        local_path = DB_FILENAME
+
+    # 1. Download do S3
+    try:
+        s3 = boto3.client(
+            's3',
+            aws_access_key_id=AWS_ACCESS_KEY,
+            aws_secret_access_key=AWS_SECRET_KEY,
+            region_name=AWS_REGION
+        )
+        s3.download_file(BUCKET_NAME, DB_FILENAME, local_path)
+    except Exception:
+        return None
+
+    # 2. Leitura do SQL
+    try:
+        engine = db.create_engine(f'sqlite:///{local_path}')
+        conn = engine.connect()
+        
+        # AJUSTE IMPORTANTE: O nome da tabela no seu print é 'RH_CONSOLIDADO'
+        df = pd.read_sql("SELECT * FROM RH_CONSOLIDADO", conn)
+        
+        conn.close()
+        return df
+    except Exception:
+        return None
+
+# --- EXECUÇÃO PRINCIPAL ---
+df = carregar_dados_do_banco()
+
+if df is None or df.empty:
+    st.error("⚠️ Não foi possível carregar os dados.")
+    st.info("Dica: Verifique se a Lambda rodou com sucesso recentemente.")
+    st.stop()
+else:
+    st.toast("Dados atualizados da AWS!", icon="☁️")
+
+# --- BARRA LATERAL (FILTROS) ---
+st.sidebar.header("🔍 Filtros Operacionais")
+
+opcoes_capacitacao = df['CAPACITAÇÃO'].unique().tolist()
+filtro_capacitacao = st.sidebar.multiselect(
+    "Nível de Capacitação:", options=opcoes_capacitacao, default=opcoes_capacitacao
 )
 
-# 3. Lista o que tem no Bucket
-st.subheader(f"📂 Conteúdo do Bucket: {BUCKET_NAME}")
-try:
-    response = s3.list_objects_v2(Bucket=BUCKET_NAME)
-    if 'Contents' in response:
-        for obj in response['Contents']:
-            st.write(f"- 📄 **Arquivo:** `{obj['Key']}` | 🕒 **Última Modificação:** {obj['LastModified']} | 📦 **Tamanho:** {obj['Size']} bytes")
-            
-            # Se for o nosso banco, tenta baixar
-            if "DB_RH" in obj['Key']:
-                FILE_KEY = obj['Key']
-                st.info(f"⬇️ Tentando baixar: {FILE_KEY}...")
-                
-                local_path = "/tmp/teste.db"
-                s3.download_file(BUCKET_NAME, FILE_KEY, local_path)
-                
-                tamanho_local = os.path.getsize(local_path)
-                st.write(f"   ↳ Download concluído. Tamanho local: {tamanho_local} bytes.")
-                
-                # Tenta ler o SQL
-                try:
-                    engine = db.create_engine(f'sqlite:///{local_path}')
-                    conn = engine.connect()
-                    # Lista as tabelas para ver se 'colaboradores' existe
-                    insp = db.inspect(engine)
-                    tabelas = insp.get_table_names()
-                    st.write(f"   ↳ 📋 Tabelas encontradas no banco: `{tabelas}`")
-                    
-                    df = pd.read_sql(f"SELECT * FROM {tabelas[0]}", conn)
-                    st.dataframe(df.head())
-                    conn.close()
-                except Exception as e:
-                    st.error(f"   ↳ ❌ Erro ao ler SQL: {e}")
+opcoes_acao = df['ACAO_SUGERIDA'].unique().tolist()
+filtro_acao = st.sidebar.multiselect(
+    "Ação Recomendada:", options=opcoes_acao, default=opcoes_acao
+)
 
-    else:
-        st.warning("⚠️ O Bucket está vazio! (Nenhum arquivo encontrado)")
+# Aplica Filtros
+df_filtrado = df.copy()
+if filtro_capacitacao:
+    df_filtrado = df_filtrado[df_filtrado['CAPACITAÇÃO'].isin(filtro_capacitacao)]
+if filtro_acao:
+    df_filtrado = df_filtrado[df_filtrado['ACAO_SUGERIDA'].isin(filtro_acao)]
 
-except Exception as e:
-    st.error(f"❌ Erro ao listar objetos no S3: {e}")
+# --- DASHBOARD (KPIs) ---
+kpi1, kpi2, kpi3, kpi4 = st.columns(4)
+
+total_colab = len(df_filtrado)
+total_risco = len(df_filtrado[df_filtrado['RISCO_PREDITO_IA'] == 1])
+total_disciplinar = len(df_filtrado[df_filtrado['ACAO_SUGERIDA'] == 'MEDIDA DISCIPLINAR'])
+soma_faltas = df_filtrado['TOTAL_FALTAS'].sum()
+
+kpi1.metric("Total Analisado", total_colab)
+kpi2.metric("Risco de Churn (IA)", total_risco, delta_color="inverse")
+kpi3.metric("Medidas Disciplinares", total_disciplinar, delta_color="inverse")
+kpi4.metric("Faltas Acumuladas", soma_faltas)
+
+st.markdown("---")
+
+# --- GRÁFICOS ---
+col_graf1, col_graf2 = st.columns(2)
+
+with col_graf1:
+    st.subheader("📌 Distribuição de Ações (Prescritivo)")
+    fig_pizza = px.pie(
+        df_filtrado, 
+        names='ACAO_SUGERIDA', 
+        hole=0.4, 
+        color_discrete_sequence=px.colors.sequential.RdBu
+    )
+    st.plotly_chart(fig_pizza, use_container_width=True)
+
+with col_graf2:
+    st.subheader("⚠️ Motivos de Absenteísmo")
+    # Filtra N/A para não sujar o gráfico
+    df_motivos = df_filtrado[df_filtrado['MOTIVO_OCORRENCIA'] != 'N/A']
+    
+    fig_barras = px.bar(
+        df_motivos['MOTIVO_OCORRENCIA'].value_counts().reset_index(),
+        x='MOTIVO_OCORRENCIA', 
+        y='count',
+        labels={'MOTIVO_OCORRENCIA': 'Motivo', 'count': 'Ocorrências'},
+        text_auto=True,
+        color='count',
+        color_continuous_scale='Reds'
+    )
+    st.plotly_chart(fig_barras, use_container_width=True)
+
+# --- TABELA DETALHADA ---
+st.subheader("📋 Relatório Detalhado")
+st.dataframe(
+    df_filtrado[['MATRÍCULA', 'NOME', 'CAPACITAÇÃO', 'TOTAL_FALTAS', 'RISCO_PREDITO_IA', 'ACAO_SUGERIDA']],
+    use_container_width=True,
+    hide_index=True
+)
